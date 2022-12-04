@@ -108,7 +108,8 @@ if __name__ == "__main__" :
             output.write(sent + "\n")
     '''
 
-    AUTH_KEY = "c1e94bb2-7723-02cd-f03c-49699cdebfe2:fx"
+    #define AUTH_KEY here
+    AUTH_KEY = None
     translator = deepl.Translator(AUTH_KEY)
 
     if os.path.exists("polish_sents.txt") :
