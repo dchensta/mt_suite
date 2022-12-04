@@ -11,4 +11,4 @@ with open("polish_sents.txt") as reader :
     d["Polish (DeepL)"] = lines
     
 df = pd.DataFrame(data = d)
-df.to_excel("train.xlsx")
+df.to_excel("polish_train.xlsx")
