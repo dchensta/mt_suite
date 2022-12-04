@@ -1,17 +1,14 @@
 import pandas as pd 
 import pathlib
+import re
+import deepl
+import os
 
 def convert_conll_to_dicts(test_dir) :
     dir = pathlib.Path(test_dir).rglob("*conll")
 
-    #i = 0
     dir_sents = []
     for file in dir : #each file is a sentence, as of 4/20/22
-        '''
-        i += 1
-        if i > 1 :
-            break
-        '''
 
         with open(file) as reader :
             lines = reader.readlines()
@@ -31,11 +28,13 @@ def convert_conll_to_dicts(test_dir) :
             current_sent = "" #DeepL automatically fills in the punctuation gaps!
             sent_tokens = []; sent_lemmas = []; sent_parses = []; sent_pbs = []
             
-            for line in lines :
+            for i, line in enumerate(lines) :
                 if line == '\n' : #marks the end of the current vertical spans of sentences
-                    file_sents.append(current_sent)
-
-                    token_dict = {"sent":current_sent, "tokens":sent_tokens, "lemmas":sent_lemmas, 
+                    s = re.sub(" / ", "", current_sent) #Use regex to remove the trailing "/ character
+                    #print(f"i: {i}, s: {s}") #Verify the new sentence preserves all punctuation 
+                    #sans the trailing "/"
+                    
+                    token_dict = {"sent":s, "tokens":sent_tokens, "lemmas":sent_lemmas, 
                                   "parses":sent_parses, "propbanks":sent_pbs}
                     file_token_dicts.append(token_dict)
 
@@ -83,10 +82,47 @@ if __name__ == "__main__" :
     written_dir = "masc-conll/data/written/"
 
     num_characters = 0
-    dir_sents = convert_conll_to_dicts(spoken_dir) + convert_conll_to_dicts(written_dir)
-    for file in dir_sents :
+    i = 0
+
+    sents_only = [] #FEED THIS INTO DEEPL
+    nones = 0
+    sent_dicts = convert_conll_to_dicts(spoken_dir) + convert_conll_to_dicts(written_dir)
+    for file in sent_dicts :
         for sentDict in file :
-            num_characters += len(sentDict["sent"])
-    
-    print(f"{num_characters} characters in spoken and written folders")
-    print("Program completed")
+            s = sentDict["sent"]
+            if s == "" :
+                nones += 1
+                file.remove(sentDict)
+                continue
+            else :
+                num_characters += len(s)
+                sents_only.append(s)
+            
+    #print("nones: ", nones)
+    #print(f"{num_characters} characters in spoken and written folders")
+
+    #print(f"{len(sents_only)} sentences")
+    '''
+    with open("sents_only.txt", "w") as output :
+        for sent in sents_only :
+            output.write(sent + "\n")
+    '''
+
+    AUTH_KEY = "c1e94bb2-7723-02cd-f03c-49699cdebfe2:fx"
+    translator = deepl.Translator(AUTH_KEY)
+
+    if os.path.exists("polish_sents.txt") :
+        os.remove("polish_sents.txt")
+
+    with open("polish_sents.txt", "w") as deepl_output:
+        for sent in sents_only :    
+            result = translator.translate_text(
+                sent,
+                source_lang = 'en',
+                target_lang = 'pl',
+                formality = 'more'
+            )
+            print(result.text)
+            deepl_output.write(result.text + "\n")
+            
+    #print("\nMASC-CONLL PropBank data successfully extracted.")
