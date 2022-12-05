@@ -11,6 +11,7 @@ VERB_ABBREVS = ["VB", "VBD", "VBG", "VBN", "VBP", "VBZ"]
 def convert_conll_to_dicts(test_dir) :
     dir = pathlib.Path(test_dir).rglob("*conll")
 
+
     dir_sents = []
     for file in dir : #each file is a sentence, as of 4/20/22
 
