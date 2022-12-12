@@ -67,8 +67,8 @@ def map_senses(train_path) :
     #print(pl_lexicon.items())
     #print("Row #'s with unequal lengths: ", unequal_lengths)
     print("Number of rows with unequal lengths: ", len(unequal_lengths))
-    print("Proportion of rows in DataFrame that have unequal lengths: ", len(unequal_lengths) / len(df))
-
+    print("Proportion of sentences in training corpus that have unequal lengths: ", len(unequal_lengths) / len(df))
+    print(f"Number of Polish lemmas covered: {len(pl_lexicon.keys())} ")
     return pl_lexicon
 
 def convert_conllup_to_test_set(gold_path) :
@@ -102,21 +102,46 @@ def evaluate_on_gold(pl_lexicon, test_X, test_y) :
 
     not_in_lexicon = {}
     in_lexicon = {}
+    instances_in_lexicon = 0
+    correct_and_in_lexicon = {}
     for x, y in zip(test_X, test_y) :
+        '''
+        x = Polish lemma
+        y = English PropBank sense
+        '''
         options = pl_lexicon.get(x)
         if options == None :
             not_in_lexicon[x] = not_in_lexicon.get(x, 0) + 1
         else :
-            in_lexicon[x] = in_lexicon.get(x, 0) + 1
+            instances_in_lexicon += 1
+            in_lexicon[x] = in_lexicon.get(x, 0) + 1 # x is one of the 25 covered senses
             for pb_sense in options.keys() :
                 if pb_sense == y :
                     score += 1
+                    correct_and_in_lexicon[x] = correct_and_in_lexicon.get(x, 0) + 1
     
     accuracy = round(score*100 / len(test_X), 3)
     print(f"Accuracy of learned Polish:English PB mappings on Polish test set: {accuracy}%")
-    print(f" = {score} / {len(test_X)} lemmas receive the correct English PropBank label, based on human annotation of those Polish lemmas")
+    print(f" = {score} / {len(test_X)} lemma instances receive the correct English PropBank label, based on human annotation of those Polish lemmas")
     print(f"{len(not_in_lexicon)} Polish lemmas not learned in training, but present in test set")
     print(f"versus {len(in_lexicon)} Polish lemmas that were learned in training and can thus be looked up for the test set")
+    print(f"{instances_in_lexicon} instances of the {len(in_lexicon)} Polish lemmas successfully learned in training.")
+    
+    prop_in_lexicon = round(instances_in_lexicon*100 / len(test_X), 3)
+    print(f"{instances_in_lexicon} / {len(test_X)} = {prop_in_lexicon}% instances of Polish lemmas are accounted for in both train and test sets.")
+
+    print(f'\n correct and in lexicon: {len(correct_and_in_lexicon.keys())}')
+    
+    for lemma, _ in correct_and_in_lexicon.items() :
+        print(f"{lemma} : {pl_lexicon[lemma]}")
+
+    '''
+    print(f"uwielbiać: {pl_lexicon['uwielbiać']}")
+    for key, value in pl_lexicon.items() :
+        if len(value.keys()) > 1 :
+            print(f"{key}: {value} ")
+    '''
+
 if __name__ == "__main__" :
     #Use training set to create mappings between Polish lemmas and English PropBank
     train_path = "polish_train.xlsx"
